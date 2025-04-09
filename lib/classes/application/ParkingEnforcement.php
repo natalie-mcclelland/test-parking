@@ -1,0 +1,34 @@
+<?php
+
+// Define class namespace
+namespace CarParkingSystem;
+
+// Include database class
+require_once(dirname(__FILE__) . "/AppDatabase.php");
+
+
+/**
+ * Parking enforcement for the Car Parking System.
+ *
+ * This class provides ...
+ * 
+ * @author Scott Sweeting <scott.sweeting@sunderland.ac.uk>
+ * @copyright 2015 University of Sunderland
+ * @license Proprietary
+ * @version 1.0.0
+ * @package CarParkingSystem
+ */
+class ParkingEnforcement {
+    
+    /**
+     * Constructor.
+     * 
+     * @since 1.0.0
+     */
+    function __construct() {
+        
+    }
+    
+}
+
+?>

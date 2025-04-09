@@ -1,0 +1,150 @@
+<?php
+
+// Define class namespace
+namespace CarParkingSystem;
+
+
+/**
+ * Application database for the Car Parking System.
+ *
+ * This class provides access to the application database that will store the information for the car parking system.
+ * 
+ * @author Scott Sweeting <scott.sweeting@sunderland.ac.uk>
+ * @copyright 2015 University of Sunderland
+ * @license Proprietary
+ * @version 1.0.0
+ * @package CarParkingSystem
+ */
+class AppDatabase {
+
+    /**
+     * The hostname of the database server.
+     * 
+     * @var string
+     */
+    private $databaseServerHost = "uks-mysql-01.mysql.database.azure.com";
+
+    /**
+     * The port of the database server.
+     * 
+     * @var int
+     */
+    private $databaseServerPort = 3306;
+
+    /**
+     * The database account username.
+     * 
+     * @var string
+     */
+    private $databaseAccountUser = "web_carpark_rw";
+
+    /**
+     * The database account password.
+     * 
+     * @var string
+     */
+    private $databaseAccountPassword = "eNYvHUs29r4TmQdVqRU7KDKgb";
+
+    /**
+     * The name of the database schema.
+     *
+     * @var string
+     */
+    private $databaseSchema = "web_carpark";
+
+    /**
+     * The database link identifer.
+     *
+     * @var object|boolean
+     */
+    private $databaseConnection = FALSE;
+
+    /**
+     * Constructor.
+     * 
+     * @throws \Exception If the connection to the database server could not be established.
+     * @since 1.0.0
+     */
+    function __construct() {
+        $this->databaseConnection = mysqli_init();
+        $this->databaseConnection->options(MYSQLI_OPT_CONNECT_TIMEOUT, 10);
+        $this->databaseConnection->real_connect($this->databaseServerHost, $this->databaseAccountUser, $this->databaseAccountPassword, $this->databaseSchema, $this->databaseServerPort, null, MYSQLI_CLIENT_SSL);
+        if ($this->databaseConnection->errno)
+            throw new \Exception("Unable to connect to the database server.");
+    }
+
+    /**
+     * Destructor.
+     * 
+     * @since 1.0.0
+     */
+    function __destruct() {
+        $this->databaseConnection->close();
+        $this->databaseConnection = FALSE;
+    }
+    
+    /**
+     * Escape special charaters for use in a SQL string, taking into account the current character set of the connection.
+     * 
+     * @param string $sqlStatement The unescaped string.
+     * @return string The escaped string.
+     * @since 1.0.0
+     */
+    public function escapeString($sqlStatement) {
+       return $this->databaseConnection->real_escape_string($sqlStatement); 
+    }
+    
+    /**
+     * Execute a SQL statement.
+     * 
+     * @param string $sqlStatement The SQL statement that is to be executed.
+     * @return object|boolean Returns the data from the query upon success, or returns `TRUE` if rows were affected by a
+     *   non "SELECT" statement such as "INSERT".
+     * 
+     * @throws \Exception An error message at the point of failure.
+     * @since 1.0.0
+     */
+    public function queryDatabase($sqlStatement = NULL) {
+        // Check if the SQL statement was specified
+        if ($sqlStatement == NULL) throw new \Exception("No SQL query specified");
+        
+        // Query the database
+        $this->databaseConnection->real_query($sqlStatement);
+        
+        // Have fields been returned by the last query?
+        if (!$this->databaseConnection->error && $this->databaseConnection->field_count > 0) {
+            // Results have been returned by the last query (e.g. "SELECT" statement)
+            
+            // Get the entire result set
+            $resultSet = $this->databaseConnection->store_result();
+            
+            // Fetch all of the results in an associate array
+            //$resultData = $resultSet->fetch_all(MYSQLI_ASSOC);  // Requires "mysqlnd" driver; workaround below...
+            $resultData = array();
+            while ($resultRow = $resultSet->fetch_assoc()) {
+                $resultData[] = $resultRow;
+            }
+            
+            // Free the result set memory
+            $resultSet->free_result();
+            
+            // Return the data
+            return $resultData;
+        
+        } else if (!$this->databaseConnection->error && $this->databaseConnection->field_count == 0 && $this->databaseConnection->insert_id != 0) {
+            // No fields have been returned but an 'Insert ID' is present (e.g. "INSERT" or "UPDATE" statement)
+            return $this->databaseConnection->insert_id;
+        
+        } else if (!$this->databaseConnection->error && $this->databaseConnection->field_count == 0) {
+            // No fields have been returned (e.g. "DELETE" statement)
+            return TRUE;
+        
+        // ... otherwise there was a problem.
+        } else {
+            throw new \Exception("The SQL query failed.");
+        }
+    }
+
+}
+
+?>

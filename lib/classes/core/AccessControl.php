@@ -1,0 +1,166 @@
+<?php
+
+// Define class namespace
+namespace CarParkingSystem;
+
+// Include library files
+require_once("C:\hosting\websites\parking.sunderland.ac.uk\lib\classes\core\AdUtils.php");
+
+
+/**
+ * Access control for the application and management of sessions.
+ * 
+ * @author Scott Sweeting <scott.sweeting@sunderland.ac.uk>
+ * @copyright 2015 University of Sunderland
+ * @license Proprietary
+ * @version 1.1.0
+ * @package CarParkingSystem
+ */
+class AccessControl {
+
+    /**
+     * The name of the session cookie.
+     *
+     * @var string Session cookie name.
+     * @since 1.0.0
+     */
+    private $sessionCookieName = "UoSParking";
+    
+    /**
+     * The number of seconds before the session cookie expires.
+     * 
+     * Potential values are:-
+     *  + A value of `0` will create a Session cookie which will immediately expire upon closure of the web browser window. 
+     *  + A value of anything greater than `0` will create a cookie with an expiry timestamp, thus closure of the web browser
+     *    window will not have any effect until the expiry timestamp is reached.
+     * 
+     * @var int The number of seconds.
+     * @since 1.0.0
+     */
+    private $sessionCookieExpiry = 0;
+    
+    /**
+     * The relative path on the server in which the cookie will be available on.
+     * 
+     * If set to `/` the cookie will be available on the entire domain, but if a directory is specified then the cookie will
+     * only be available within that directory and all sub-directories.
+     * 
+     * @var string The relative path.
+     * @since 1.1.0
+     */
+    protected $sessionCookiePath = "/";
+    
+    /**
+     * The (sub)domain in which the cookie will be available on.
+     * 
+     * If set to a sub-domain then the cookie will be available on the sub-domain and sub-domains of it, e.g.
+     * `host.domain.tld` and `sub.host.domain.tld` respectively.
+     * 
+     * If set to an entire domain then the cookie will be available to all sub-domains within in, e.g.
+     * `.domain.tld`.
+     * 
+     * @var string The (sub)domain.
+     * @since 1.1.0
+     */
+    protected $sessionCookieDomain = ".sunderland.ac.uk";
+    
+    /**
+     * Constructor.
+     * 
+     * @since 1.0.0
+     */
+    function __construct() {
+        $this->sessionInitalise();
+    }
+
+    /**
+     * Initialises a session.
+     * 
+     * @since 1.0.0
+     */
+    public function sessionInitalise() {
+        // Set session properties
+        session_name($this->sessionCookieName);
+        session_set_cookie_params($this->sessionCookieExpiry);
+
+        // Start the session
+        @session_start();
+    }
+
+    /**
+     * Creates a new session.
+     * 
+     * @since 1.0.0
+     */
+    public function sessionCreate() {
+        // Set the cookie
+        setcookie($this->sessionCookieName, session_id(), time() + $this->sessionCookieExpiry, $this->sessionCookiePath, $this->sessionCookieDomain);
+    }
+
+    /**
+     * Verifies if the session is valid.
+     * 
+     * @return boolean Returns `TRUE` if the session exists or `FALSE` if the session does not exist.
+     * @since 1.0.0
+     */
+    public function sessionVerify() {
+        // Check if the session exists
+        if (isset($_COOKIE[$this->sessionCookieName]) && isset($_SESSION['authUsername'])) {
+            // The session exists so reset the cookie
+            setcookie($this->sessionCookieName, session_id(), time() + $this->sessionCookieExpiry, $this->sessionCookiePath, $this->sessionCookieDomain);
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+
+    /**
+     * Destroys the session.
+     * 
+     * @since 1.0.0
+     */
+    public function sessionDestroy() {
+        // Destroy cookie and session
+        setcookie($this->sessionCookieName, "", time() - $this->sessionCookieExpiry);
+        session_unset();
+        session_destroy();
+    }
+
+    /**
+     * Authenticates the user.
+     *
+     * @param string $username The username of the current user.
+     * @param string $password The password of the current user.
+     * @return boolean Returns `TRUE` if the authentication is successful or `FALSE` if not.
+     * @since 1.0.0
+     */
+    public function authenticateUser($username, $password) {
+        $adUtils = new \CarParkingSystem\AdUtils();
+        if ($adUtils->authenticate($username, $password)) {
+            return TRUE;
+        } else {
+            return FALSE;
+        }
+    }
+
+    /**
+     * Checks if the authentication is valid.
+     * 
+     * If the authentication is valid then a boolean value of *true* will be returned.
+     * If the authentication is not valid then a boolean value *false* will be returned.
+     * 
+     * @return boolean Returns `TRUE` if the session exists. Returns `FALSE` if the session does not exist.
+     * @since 1.0.0
+     */
+    public function checkAuthentication() {
+        if ($this->sessionVerify() == TRUE) {
+            return TRUE;
+        } else {
+            $this->sessionDestroy();
+            return FALSE;
+        }
+    }
+
+}
+
+?>
