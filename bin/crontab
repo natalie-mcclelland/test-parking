@@ -1,0 +1,51 @@
+################################################################################
+# Car Parking System
+# ==================
+#
+# Crontab file for performing automated tasks within the application.
+#
+################################################################################
+
+# Define the location of the application scripts
+UOS_CARPARK_APP_BIN = /app/uos/hosting/websites/parkingpermit.sunderland.ac.uk/bin
+
+
+#
+# Applications
+#
+
+#
+# Data Transfer
+*/5 * * * * root $UOS_CARPARK_APP_BIN/applications/data-transfer/blue-badge-tfr.sh
+
+
+#
+# Data Export
+# Permit Printing
+1 0 * * 1-6 root $UOS_CARPARK_APP_BIN/applications/data-export/permit-printing/export-permit-data-printing.sh
+
+# Staff data for Payroll
+5 0 11 * * root $UOS_CARPARK_APP_BIN/applications/data-export/staff-annual-payroll/export-staff-annual-payroll.sh
+
+# Authorised Vehicles List
+20 0 * * 1-6 root $UOS_CARPARK_APP_BIN/applications/data-export/authorised-vehicles-list/export_authorised-vehicles-list.sh
+
+
+#
+# Expire Permits
+10 0 1 9 * root $UOS_CARPARK_APP_BIN/applications/expire-permits/expire-permits.sh
+
+
+#
+# Data Deletion
+30 0 1 9 * root $UOS_CARPARK_APP_BIN/applications/data-deletion/data-deletion.sh
+
+
+
+
+#
+# Enforcement
+#
+
+# No scripts currently exist
+

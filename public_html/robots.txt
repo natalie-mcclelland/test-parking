@@ -1,0 +1,15 @@
+#
+# Robots exclusion file
+#
+
+
+# Funnelback
+User-agent: FunnelBack
+Disallow: /
+Allow: /index.php
+
+
+# Global exclusions
+User-agent: *
+Disallow: /
+Allow: /index.php

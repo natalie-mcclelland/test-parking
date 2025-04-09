@@ -1,0 +1,5 @@
+#Software: Microsoft Internet Information Services 10.0
+#Version: 1.0
+#Date: 2024-05-13 09:04:13
+#Fields: date time s-sitename s-computername s-ip cs-method cs-uri-stem cs-uri-query s-port cs-username c-ip cs-version cs(User-Agent) cs(Cookie) cs(Referer) cs-host sc-status sc-substatus sc-win32-status sc-bytes cs-bytes time-taken
+2024-05-13 09:04:13 W3SVC4 UKS-WEB-01 10.12.30.4 GET /who.php - 443 - 10.12.4.21 HTTP/1.1 Mozilla/5.0+(Windows+NT+10.0;+Win64;+x64)+AppleWebKit/537.36+(KHTML,+like+Gecko)+Chrome/124.0.0.0+Safari/537.36 OptanonConsent=isGpcEnabled=0&datestamp=Fri+May+10+2024+10%3A20%3A23+GMT%2B0100+(British+Summer+Time)&version=202403.2.0&browserGpcFlag=0&isIABGlobal=false&hosts=&consentId=a3ac3057-58bf-49a7-bb94-80e2a9995449&interactionCount=1&isAnonUser=1&landingPath=https%3A%2F%2Fwww.sunderland.ac.uk%2Fhelp%2Fcontact-us%2Fparking%2F&groups=C0001%3A1%2CC0002%3A0%2CC0003%3A0%2CC0004%3A0%2Cthird%3A0 - parking.sunderland.ac.uk 200 0 0 227 1089 352

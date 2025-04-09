@@ -1,0 +1,19 @@
+#tray-navigation{
+  display: none;  
+}
+
+.blueBadge{
+  display: block;
+}
+.mandatePermit{
+	display: block;
+}
+.notice_vehicle_no{
+	display: block;
+}
+.login-options{
+  width: 50%;
+}
+.accessibility-options{
+  width: 50%;
+}

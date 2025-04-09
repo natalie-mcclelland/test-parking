@@ -1,0 +1,207 @@
+<?php
+
+// Define class namespace
+namespace CarParkingSystem;
+
+// Include class files
+require_once(dirname(__FILE__) . "/../../ext/adLDAP/adLDAP.php");
+require_once(dirname(__FILE__) . "/UosUtils.php");
+
+
+/**
+ * Utilises the adLDAP class for usage of Active Directory.
+ * 
+ * This class includes additional functionality not present in the _adLDAP_ class or enhances the functionaility thereof.
+ * 
+ * @author Scott Sweeting <scott.sweeting@sunderland.ac.uk>
+ * @copyright 2015 University of Sunderland
+ * @license Proprietary
+ * @version 1.0.0
+ * @package CarParkingSystem
+ * @see \adLDAP
+ */
+class AdUtils extends \adLDAP {
+
+    /**
+     * The account suffix for the domain.
+     * 
+     * @var string
+     */
+    protected $accountSuffix = "@uni.ad.sunderland.ac.uk";
+
+    /**
+     * The base DN for the domain.
+     * 
+     * If this is set to null then adLDAP will attempt to obtain this automatically from the `rootDSE`.
+     * 
+     * @var string
+     */
+    protected $baseDn = "DC=uni,DC=ad,DC=sunderland,DC=ac,DC=uk";
+
+    /**
+     * Port used to connect to the domain controllers.
+     *  
+     * @var int
+     */
+    protected $adPort = parent::ADLDAP_LDAP_PORT;
+
+    /**
+     * Array of domain controllers for load balancing.
+     * 
+     * @var array
+     */
+    protected $domainControllers = array("uni.ad.sunderland.ac.uk");
+
+    /**
+     * Administrator/Service account username.
+     * 
+     * @var string
+     */
+    protected $adminUsername = "svc_confluence";
+    
+    /**
+     * Administrator/Service account password.
+     *
+     * @var string
+     */
+    protected $adminPassword = "N1tr0g3n";
+
+    /**
+     * AD does not return the primary group. Force the primary group to be returned?
+     * 
+     * @var boolean
+     */
+    protected $realPrimaryGroup = TRUE;
+
+    /**
+     * Use SSL (LDAPS)? When using SSL you should disable TLS.
+     * 
+     * @var boolean
+     */
+    protected $useSSL = FALSE;
+
+    /**
+     * Use TLS? When using TLS you should disable SSL.
+     * 
+     * @var boolean
+     */
+    protected $useTLS = FALSE;
+
+    /**
+     * Use SSO? Reuse password set by the brower through NTLM or Kerberos.
+     * 
+     * @var boolean
+     */
+    protected $useSSO = FALSE;
+
+    /**
+     * Recursively query group memberships.
+     * 
+     * @var boolean
+     */
+    protected $recursiveGroups = TRUE;
+
+    
+    /**
+     * Constructor.
+     * 
+     * Tries to bind to the AD domain over LDAP or LDAPS.
+     * 
+     * @param array $options Array of options to pass to the parent constructor.
+     * @throws Exception If unable to bind to Domain Controller.
+     * @return boolean
+     * @since 1.0.0
+     */
+    function __construct($options = array()) {
+        // Call the parent constructor
+        parent::__construct($options);
+    }
+    
+    
+    /**
+     * Get the properties for a specific account.
+     * 
+     * @param string $userAccount The username of the account the properties need to be returned for.
+     * @return array|boolean Returns an array of account properties.  Returns `FALSE` if the account properties could not be retrieved.
+     * @since 1.0.0
+     */
+    public function getAccountProperties($userAccount) {
+        $uosUtils = new \CarParkingSystem\UosUtils();
+
+        // Retrieve the account properties
+        $acctEntry = $this->user()->info($userAccount, array('sAMAccountName', 'givenName', 'sn', 'displayName', 'mail', 'departmentNumber', 'employeeNumber', 'extensionAttribute1', 'extensionAttribute2', 'extensionAttribute3', 'extensionAttribute4', 'pwdLastSet', 'lastLogonTimestamp', 'accountExpires', 'userAccountControl'));
+
+        if ($acctEntry !== FALSE) {
+            // Create an array to hold the properties of the account
+            $acctProps = array(
+                'username' => $acctEntry[0]['samaccountname'][0],
+                'firstName' => $acctEntry[0]['givenname'][0],
+                'surname' => $acctEntry[0]['sn'][0],
+                'displayName' => $acctEntry[0]['displayname'][0],
+                'emailAddr' => $acctEntry[0]['mail'][0],
+                'department' => (isset($acctEntry[0]['departmentnumber'][0])) ? $acctEntry[0]['departmentnumber'][0] : NULL,
+                'employeeNumber' => (isset($acctEntry[0]['employeenumber'][0])) ? $acctEntry[0]['employeenumber'][0] : NULL,
+                'userType' => (isset($acctEntry[0]['extensionattribute1'][0])) ? $acctEntry[0]['extensionattribute1'][0] : NULL,
+                'libraryBarcode' => (isset($acctEntry[0]['extensionattribute2'][0])) ? $acctEntry[0]['extensionattribute2'][0] : NULL,
+                'studentNumber' => (isset($acctEntry[0]['extensionattribute3'][0])) ? $acctEntry[0]['extensionattribute3'][0] : NULL,
+                'programmeCode' => (isset($acctEntry[0]['extensionattribute4'][0])) ? $acctEntry[0]['extensionattribute4'][0] : NULL,
+                'pwdLastSet' => $uosUtils->convertMSWindowsTimeToUnixTime($acctEntry[0]['pwdlastset'][0]),
+                'lastLogon' => (isset($acctEntry[0]['lastlogontimestamp'][0])) ? $uosUtils->convertMSWindowsTimeToUnixTime($acctEntry[0]['lastlogontimestamp'][0]) : NULL,
+                'accountExpires' => $uosUtils->convertMSWindowsTimeToUnixTime($acctEntry[0]['accountexpires'][0]),
+                'accountStatus' => $this->getAccountUACValueDescription($acctEntry[0]['useraccountcontrol'][0]),
+            );
+        
+        } else {
+            return FALSE;
+        }
+
+        return $acctProps;
+    }
+
+    /**
+     * Get the description of the account's 'userAccountControl' attribute.
+     * 
+     * The account's `userAccountControl` value is used to map the decimal value to a string description.
+     * 
+     * @param int $userAccountControl The `userAccountControl` value.
+     * @return string Description of the value.
+     * @since 1.0.0
+     * @link http://support.microsoft.com/kb/305144 How to use the 'UserAccountControl' flags to manipulate user account properties.
+     * @link http://msdn.microsoft.com/en-us/library/ms677840.aspx 'ms-DS-User-Account-Control-Computed' attribute.
+     * @link http://jackstromberg.com/2013/01/useraccountcontrol-attributeflag-values/ 'UserAccountControl' attribute/flag values.
+     */
+    public function getAccountUACValueDescription($userAccountControl) {
+        $uacDescription = "Unknown";
+
+        if ($userAccountControl === "512")
+            $uacDescription = "Enabled";
+        if ($userAccountControl === "514")
+            $uacDescription = "Disabled";
+        if ($userAccountControl === "528")
+            $uacDescription = "Enabled; locked out";
+        if ($userAccountControl === "530")
+            $uacDescription = "Disabled; locked out";
+        if ($userAccountControl === "544")
+            $uacDescription = "Enabled; password not required";
+        if ($userAccountControl === "546")
+            $uacDescription = "Disabled; password not required";
+        if ($userAccountControl === "66048")
+            $uacDescription = "Enabled; password never expires";
+        if ($userAccountControl === "66050")
+            $uacDescription = "Disabled; password never expires";
+        if ($userAccountControl === "66080")
+            $uacDescription = "Enabled; password never expires and not required";
+        if ($userAccountControl === "66082")
+            $uacDescription = "Disabled; password never expires and not required";
+        if ($userAccountControl === "8389120")
+            $uacDescription = "Enabled; password expired";
+        if ($userAccountControl === "8389122")
+            $uacDescription = "Disabled; password expired";
+
+        return $uacDescription;
+    }
+
+}
+
+?>
+
